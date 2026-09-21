@@ -15,15 +15,20 @@ Expected result: the agent calls the trace-mcp search and impact tools and answe
 ## Requirements
 
 - Node.js 22 or newer on `PATH`.
-- The `trace-mcp` executable on `PATH` (`npm install -g trace-mcp`). `mcp.json` starts it as a stdio server with no arguments.
+- The `trace-mcp` executable on `PATH`, version 3.28.0 or newer (`npm install -g trace-mcp@3.28.0` — this package was validated against 3.28.0). `mcp.json` starts it as a stdio server with no arguments. Note the host cannot verify which binary answers to a bare `trace-mcp` name: a stale global install or any other same-named `PATH` entry wins silently, so keep the pinned version installed and, if your setup allows it, check the install with `npm audit signatures` (every trace-mcp release ships with Sigstore provenance).
 - macOS, Linux, or Windows.
 - No account, no paid service, no API key.
 
-## Data and network
+## Data and network (default configuration)
 
-- The code index is built and kept on the user's machine. Source code never leaves it.
-- At most one anonymous usage ping per day (version, OS, MCP client, aggregate counts; no code, no paths, no per-install identifier beyond a locally generated UUID). Turn it off with `TRACE_MCP_TELEMETRY=off`, or with `"telemetry": { "usage_ping": false }` in `~/.trace/.config.json`.
-- No other network access. No credentials in the package.
+- The code index is built and kept on the user's machine. With default settings, source code never leaves it.
+- Two opt-in features change that, and neither is enabled by default: cloud embedding providers sit behind an explicit consent gate (`~/.trace/consent.json`, granted per provider) and send code excerpts to the configured provider; OTLP/Langfuse export sends spans to a backend you configure. Enabling either is a deliberate step outside this package's defaults.
+- At most one anonymous usage ping per day, sent to Google's GA4 Measurement Protocol endpoint: a persistent locally-generated UUID (stored in `~/.trace/telemetry-state.json`), the trace-mcp version and previous version, install/upgrade signal, Node major, OS platform, timezone country, MCP client name and the model it mostly drove, number of indexed repositories, machine class (arch, cores, RAM in whole GB, kernel version), tool preset and advertised tool count, aggregate tool-call/saved-token deltas, and daemon start/crash counters. No code, no paths, no file names, no query content, no IP. Full field list: https://trace-mcp.com/privacy.html. Turn it off with `TRACE_MCP_TELEMETRY=off`, or with `"telemetry": { "usage_ping": false }` in `~/.trace/.config.json`. Suppressed automatically in CI.
+- No other network access with default settings. No credentials in the package.
+
+## Writes
+
+Two of the server's tools modify the user's local checkout, nothing else: `apply_rename` rewrites a definition plus every reference in one operation, and `apply_codemod` applies pattern rewrites with a dry-run preview as the default — applying requires `dry_run: false`, and changes touching more than 20 files additionally require `confirm_large: true`.
 
 ## Skills and MCP
 

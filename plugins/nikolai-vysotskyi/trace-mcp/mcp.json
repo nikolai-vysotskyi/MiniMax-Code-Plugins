@@ -3,7 +3,8 @@
   "mcpServers": {
     "trace-mcp": {
       "type": "stdio",
-      "command": "trace-mcp"
+      "command": "npx",
+      "args": ["-y", "trace-mcp@3.28.0"]
     }
   }
 }

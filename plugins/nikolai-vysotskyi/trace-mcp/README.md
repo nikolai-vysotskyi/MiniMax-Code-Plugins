@@ -15,7 +15,7 @@ Expected result: the agent calls the trace-mcp search and impact tools and answe
 ## Requirements
 
 - Node.js 22 or newer on `PATH`.
-- The `trace-mcp` executable on `PATH`, version 3.28.0 or newer (`npm install -g trace-mcp@3.28.0` — this package was validated against 3.28.0). `mcp.json` starts it as a stdio server with no arguments. Note the host cannot verify which binary answers to a bare `trace-mcp` name: a stale global install or any other same-named `PATH` entry wins silently, so keep the pinned version installed and, if your setup allows it, check the install with `npm audit signatures` (every trace-mcp release ships with Sigstore provenance).
+- `npx` on `PATH`. `mcp.json` starts the server as `npx -y trace-mcp@3.28.0` with no other arguments, so the exact validated version is resolved from the npm registry on every launch: a stale global install or any other same-named `PATH` entry is never consulted, and npm verifies the tarball integrity on download. Every trace-mcp release additionally ships with Sigstore provenance (`npm audit signatures`). Offline fallback: a pre-installed `trace-mcp` binary works if `trace-mcp --version` prints 3.28.0 or newer — minus the registry guarantee above, so prefer the `npx` form.
 - macOS, Linux, or Windows.
 - No account, no paid service, no API key.
 
@@ -28,7 +28,20 @@ Expected result: the agent calls the trace-mcp search and impact tools and answe
 
 ## Writes
 
-Two of the server's tools modify the user's local checkout, nothing else: `apply_rename` rewrites a definition plus every reference in one operation, and `apply_codemod` applies pattern rewrites with a dry-run preview as the default — applying requires `dry_run: false`, and changes touching more than 20 files additionally require `confirm_large: true`.
+Six of the server's tools modify the user's local checkout; everything else is read-only. All six preview with `dry_run: true` by default and write nothing until re-called with `dry_run: false`:
+
+- `apply_rename` — renames a definition plus every reference in one operation, after collision detection. Past 20 files the apply fails closed (`success: false`, `Rename affects N files (>20). Pass confirm_large: true to proceed.`) and returns the preview so the call can be re-issued deliberately.
+- `apply_codemod` — pattern rewrites (AST-aware on TypeScript/JavaScript, regex fallback elsewhere). Same >20-file `confirm_large` gate as rename, same fail-closed shape.
+- `extract_function` — extracts a line range into a named helper (single file, TypeScript/JavaScript). Rejects multi-return slices with a structured error instead of guessing; lowers `confidence` on shadowed-variable cases.
+- `apply_move` — moves a symbol between files, or renames/moves a file, updating imports.
+- `change_signature` — adds, removes, renames, or reorders parameters and updates call sites.
+- `remove_dead_code` — deletes one symbol after verifying it is dead (multi-signal detection or zero incoming edges), and warns about orphaned imports.
+
+`plan_refactoring` previews any rename/move/extract/signature change without touching files — the read-only way to review blast radius first.
+
+Two limits, stated plainly: applied edits are not rolled back automatically (a failed type-check after the fact is reported, not reverted — review the preview, or version-control the checkout), and every file argument is confined to the indexed project root (out-of-root paths are rejected before any write; no symlink resolution is claimed).
+
+The refactoring and codemod skills need these tools visible: under the server's default preset they are hidden (`Tool "apply_rename" is not available in this session's tool preset`), so load the `dev` preset first (`load_tools`).
 
 ## Skills and MCP
 

@@ -72,7 +72,7 @@ extract_function({
   file_path: "src/foo.ts",
   start_line: 42,
   end_line: 67,
-  new_name: "computeTotals"
+  function_name: "computeTotals"
 })
 ```
 

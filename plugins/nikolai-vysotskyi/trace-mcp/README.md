@@ -15,7 +15,7 @@ Expected result: the agent calls the trace-mcp search and impact tools and answe
 ## Requirements
 
 - Node.js 22 or newer on `PATH`.
-- `npx` on `PATH`. `mcp.json` starts the server as `npx -y trace-mcp@3.28.0` with no other arguments, so the exact validated version is resolved from the npm registry on every launch: a stale global install or any other same-named `PATH` entry is never consulted, and npm verifies the tarball integrity on download. Every trace-mcp release additionally ships with Sigstore provenance (`npm audit signatures`). Offline fallback: a pre-installed `trace-mcp` binary works if `trace-mcp --version` prints 3.28.0 or newer — minus the registry guarantee above, so prefer the `npx` form.
+- `npx` on `PATH`. `mcp.json` starts the server as `npx -y trace-mcp@3.31.5` with no other arguments, so the exact validated version is resolved from the npm registry on every launch: a stale global install or any other same-named `PATH` entry is never consulted, and npm verifies the tarball integrity on download. Every trace-mcp release additionally ships with Sigstore provenance (`npm audit signatures`). Offline fallback: a pre-installed `trace-mcp` binary works if `trace-mcp --version` prints 3.31.5 or newer — minus the registry guarantee above, so prefer the `npx` form.
 - macOS, Linux, or Windows.
 - No account, no paid service, no API key.
 
@@ -39,7 +39,7 @@ Six of the server's tools modify the user's local checkout; everything else is r
 
 `plan_refactoring` previews any rename/move/extract/signature change without touching files — the read-only way to review blast radius first.
 
-Two limits, stated plainly: applied edits are not rolled back automatically (a failed type-check after the fact is reported, not reverted — review the preview, or version-control the checkout), and every file argument is confined to the indexed project root (out-of-root paths are rejected before any write; no symlink resolution is claimed).
+Two limits, stated plainly: applied edits are not rolled back automatically (a failed type-check after the fact is reported, not reverted — review the preview, or version-control the checkout), and every file argument is confined to the indexed project root (out-of-root paths are rejected before any write; writes addressed through symlinks pointing outside the root are refused at write time — verified against the pinned 3.31.5).
 
 The refactoring and codemod skills need these tools visible: under the server's default preset they are hidden (`Tool "apply_rename" is not available in this session's tool preset`), so load the `dev` preset first (`load_tools`).
 
